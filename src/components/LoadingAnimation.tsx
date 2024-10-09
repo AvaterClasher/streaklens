@@ -1,7 +1,7 @@
-// components/LoadingScreen.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; 
 
 interface StatusResponse {
   status: "queue" | "completed" | "none";
@@ -16,6 +16,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ uid }) => {
   const [status, setStatus] = useState<"queue" | "completed" | "none">("queue");
   const [error, setError] = useState<string>("");
 
+  const router = useRouter();
+
   useEffect(() => {
     if (!uid) {
       setError("No UID provided.");
@@ -25,7 +27,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ uid }) => {
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/status?uid=${uid}`);
+        const response = await fetch(`http://localhost:8000/status?uid=${uid}`);
         if (!response.ok) {
           throw new Error("Failed to fetch status.");
         }
@@ -42,10 +44,16 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ uid }) => {
 
     const interval = setInterval(() => {
       checkStatus();
-    }, 5000);
+    }, 20000);
 
     return () => clearInterval(interval);
   }, [uid]);
+
+  useEffect(() => {
+    if (status === "completed") {
+      router.push("/query"); 
+    }
+  }, [status, router]);
 
   const renderContent = () => {
     switch (status) {
@@ -53,12 +61,12 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ uid }) => {
         return (
           <>
             <div className="loader mb-4"></div>
-            <p className="text-lg">Your request is being processed. An email will be sent once completed.</p>
+            <p className="text-lg">Your request is being processed.</p>
           </>
         );
       case "completed":
         return (
-          <p className="text-lg text-green-600">Processing completed! Please check your email.</p>
+          <p className="text-lg text-green-600">Processing completed! You will be routed soon.</p>
         );
       case "none":
         return (

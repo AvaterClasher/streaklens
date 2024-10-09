@@ -1,4 +1,3 @@
-// components/SubmitForm.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -6,19 +5,19 @@ import { useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 
 interface SubmissionFormData {
-  productName: string;
-  csvLink: string;
-  clerkUid: string;
+  product_name: string;
+  file_url: string;
+  uid: string;
 }
 
 const SubmitForm: React.FC = () => {
-  const clerk = useClerk()
+  const clerk = useClerk();
   const userId = clerk.user?.id;
   const router = useRouter();
   const [formData, setFormData] = useState<SubmissionFormData>({
-    productName: "",
-    csvLink: "",
-    clerkUid: userId,
+    product_name: "",
+    file_url: "",
+    uid: userId || "",
   });
   const [error, setError] = useState<string>("");
 
@@ -31,16 +30,16 @@ const SubmitForm: React.FC = () => {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError("");
-    if (!formData.productName || !formData.csvLink || !formData.clerkUid) {
+    if (!formData.product_name || !formData.file_url || !formData.uid) {
       setError("All fields are required.");
       return;
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/process", {
+      console.log(formData);
+      const response = await fetch("http://localhost:8000/process_file", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,25 +52,25 @@ const SubmitForm: React.FC = () => {
         throw new Error(errorData.message || "Failed to submit data.");
       }
 
-      router.push(`/loading?uid=${formData.clerkUid}`);
+      router.push(`/loading?uid=${formData.uid}`);
+
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="mb-4 text-red-600 text-center">{error}</div>
-      )}
+    <div className="space-y-4">
+      {error && <div className="mb-4 text-red-600 text-center">{error}</div>}
+      
       <div>
         <label className="block text-sm font-medium text-gray-400">
           Product Name
         </label>
         <input
           type="text"
-          name="productName"
-          value={formData.productName}
+          name="product_name"
+          value={formData.product_name}
           onChange={handleChange}
           required
           className="mt-1 block w-full border border-gray-300 text-black rounded-md p-2"
@@ -84,8 +83,8 @@ const SubmitForm: React.FC = () => {
         </label>
         <input
           type="url"
-          name="csvLink"
-          value={formData.csvLink}
+          name="file_url"
+          value={formData.file_url}
           onChange={handleChange}
           required
           className="mt-1 block w-full border border-gray-300 text-black rounded-md p-2"
@@ -93,12 +92,12 @@ const SubmitForm: React.FC = () => {
         />
       </div>
       <button
-        type="submit"
+        onClick={handleSubmit}
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
       >
         Submit
       </button>
-    </form>
+    </div>
   );
 };
 
