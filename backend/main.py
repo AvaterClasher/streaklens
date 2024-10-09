@@ -5,6 +5,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -12,7 +13,16 @@ load_dotenv()
 
 supabase_url = os.getenv("URL")
 supabase_key = os.getenv("API_KEY")
+resend_api_key = os.getenv("RESEND")
 supabase: Client = create_client(supabase_url, supabase_key)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
+)
 
 class FileInfo(BaseModel):
     product_name: str
@@ -94,6 +104,13 @@ def clean_and_validate_data(df):
 @app.post("/process_file")
 async def process_file(file_info: FileInfo):
     try:
+        supabase.table("file_status").insert({
+            "uid": file_info.uid,
+            "product_name": file_info.product_name,
+            "file_url": file_info.file_url,
+            "status": "queue"
+        }).execute()
+
         response = requests.get(file_info.file_url)
         response.raise_for_status()
         temp_file_path = f"temp_{file_info.uid}.csv"
@@ -107,8 +124,25 @@ async def process_file(file_info: FileInfo):
         records = df.to_dict('records')
         result = supabase.table("data").insert(records).execute()        
         os.remove(temp_file_path)
+
+        supabase.table("file_status").update({
+            "status": "completed"
+        }).eq("uid", file_info.uid).execute()
         
         return {"message": "File processed and data inserted successfully", "product_name": file_info.product_name, "uid": file_info.uid}
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/status")
+async def check_status(uid: str):
+    try:
+        result = supabase.table("file_status").select("status").eq("uid", uid).execute()
+        if len(result.data) == 0:
+            raise HTTPException(status_code=404, detail="Status not found for the given UID")
+        
+        status = result.data[0]["status"]
+        return {"uid": uid, "status": status}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
