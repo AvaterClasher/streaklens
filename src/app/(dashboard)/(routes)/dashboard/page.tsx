@@ -1,5 +1,6 @@
 "use client";
 import { Brain } from "flowbite-react-icons/outline";
+import { color } from "framer-motion";
 import Link from "next/link";
 import React from "react";
 export const runtime = "edge";
@@ -20,6 +21,14 @@ const tools = [
     href: "/thumbnail",
     description: "Your AI thumbnail maker",
   },
+  {
+    label: "AI Content Creation",
+    icon: Brain,
+    color: "text-violet-500",
+    bgColor: "bg-violet-500",
+    href: "/content",
+    description: "AI-powered content creation",
+  }
 ];
 
 const page = () => {
