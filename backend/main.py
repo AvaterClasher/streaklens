@@ -6,6 +6,8 @@ import requests
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 app = FastAPI()
 
@@ -13,8 +15,8 @@ load_dotenv()
 
 supabase_url = os.getenv("URL")
 supabase_key = os.getenv("API_KEY")
-resend_api_key = os.getenv("RESEND")
 supabase: Client = create_client(supabase_url, supabase_key)
+gemini_api_key = os.getenv("GEM_API_KEY")
 
 app.add_middleware(
     CORSMiddleware,
@@ -101,6 +103,13 @@ def clean_and_validate_data(df):
     
     return df
 
+llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7, google_api_key=gemini_api_key)
+
+def generate_response_from_task(task_prompt):
+    messages = task_prompt
+    response = llm.invoke(messages)
+    return response.content
+
 @app.post("/process_file")
 async def process_file(file_info: FileInfo):
     try:
@@ -144,5 +153,13 @@ async def check_status(uid: str):
         status = result.data[0]["status"]
         return {"uid": uid, "status": status}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/data")
+async def get_data():
+    try:
+        result = generate_response_from_task("Provide a summary of a cow")
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
