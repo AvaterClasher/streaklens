@@ -8,7 +8,7 @@ from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-
+from sequilizer import getData
 app = FastAPI()
 
 load_dotenv()
@@ -163,3 +163,14 @@ async def get_data():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/productToUserData")
+async def getUserData(productName : str,productDescription : str):
+    await getData(productInfo={
+        'name' : productName,
+        'description' : productDescription
+    })
+    
+    return {
+        "DONE" : "HELLO"
+    }
