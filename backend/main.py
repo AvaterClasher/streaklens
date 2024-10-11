@@ -30,7 +30,11 @@ class FileInfo(BaseModel):
     product_name: str
     file_url: str
     uid: str
-
+    
+class ProductInfo(BaseModel):
+    product_name : str
+    product_description : str
+    
 expected_columns = {
     'user_id': 'bigint',
     'name': 'text',
@@ -165,10 +169,10 @@ async def get_data():
         raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/productToUserData")
-async def getUserData(productName : str,productDescription : str):
+async def getUserData(productInfo : ProductInfo):
     data = await getData(productInfo={
-        'name' : productName,
-        'description' : productDescription
+        'name' : productInfo.product_name,
+        'description' : productInfo.product_description
     })
     
     return {
