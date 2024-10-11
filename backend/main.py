@@ -166,11 +166,11 @@ async def get_data():
     
 @app.post("/productToUserData")
 async def getUserData(productName : str,productDescription : str):
-    await getData(productInfo={
+    data = await getData(productInfo={
         'name' : productName,
         'description' : productDescription
     })
     
     return {
-        "DONE" : "HELLO"
+        "data" : data
     }
