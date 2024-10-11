@@ -81,13 +81,33 @@ async def main():
         print(age_max)
         run_sql_query(gender=gender,age_range=(age_min,age_max),marketing_segment='A')
 
+def build_user_response(data: dict) -> dict:
+    """
+    Extract selected fields from the user data and return a simplified response.
+    
+    Parameters:
+    - data: A dictionary containing user data.
+    
+    Returns:
+    - A dictionary containing the extracted fields.
+    """
+    response = {
+        'user_id': data.get('user_id', 'N/A'),
+        'name': data.get('name', 'N/A'),
+        'email': data.get('email', 'N/A'),
+        'gender': data.get('gender', 'N/A'),
+        'age': data.get('age', 'N/A'),
+        'location': data.get('location', 'N/A')
+    }
+    
+    return response
 
 async def getData(productInfo : dict):
     response = await SQLparameters(productInfo=productInfo)
     if response:
         gender,age_min,age_max,marketing_segment = generate_sql_query(response)
         data = run_sql_query(gender=gender,age_range=(age_min,age_max),marketing_segment=marketing_segment)
-        
+        return [build_user_response(datum) for datum in data]
 # Run the async main function
 if __name__ == "__main__":
     asyncio.run(main())
