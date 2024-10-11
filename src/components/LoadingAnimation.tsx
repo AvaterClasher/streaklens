@@ -51,7 +51,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ uid }) => {
 
   useEffect(() => {
     if (status === "completed") {
-      router.push("/query"); 
+      router.push(`/query?uid=${uid}`); 
     }
   }, [status, router]);
 
