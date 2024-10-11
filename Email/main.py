@@ -1,12 +1,17 @@
 import os
 import json
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import HumanMessage
 
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
+
+
+app = FastAPI()
 
 
 llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7, google_api_key=api_key)
@@ -33,14 +38,12 @@ email_formats = {
 }
 
 def generate_best_email(data):
-   
     formatted_emails = {
         "discount_email": email_formats["discount_email"].format(**data),
         "limited_offer": email_formats["limited_offer"].format(**data),
         "no_discount_email": email_formats["no_discount_email"].format(**data)
     }
 
-    
     prompt = f"""
     You are an expert email copywriter. Given the following email formats, choose the best one based on the data provided.
     1. Discount email:
@@ -64,32 +67,27 @@ def generate_best_email(data):
     response = llm.invoke([HumanMessage(content=prompt)])
     return response.content
 
-def process_json_input(json_input):
+
+class EmailData(BaseModel):
+    USER_NAME: str
+    PRODUCT_NAME: str
+    DISCOUNT: int
+    MSP: str
+
+@app.post("/generate-email/")
+async def generate_email(data: EmailData):
     try:
-        data = json.loads(json_input)
-        required_fields = ['USER_NAME', 'PRODUCT_NAME', 'DISCOUNT', 'MSP']
+        
+        email_data = data.dict()
         
         
-        if all(field in data for field in required_fields):
-            return generate_best_email(data)
-        else:
-            missing_fields = [field for field in required_fields if field not in data]
-            return f"Error: Missing required fields: {', '.join(missing_fields)}"
-    except json.JSONDecodeError:
-        return "Error: Invalid JSON format"
+        generated_email = generate_best_email(email_data)
+        return {"generated_email": generated_email}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-if __name__ == "__main__":
-    
-    sample_json_input = '''
-    {
-        "USER_NAME": "John Doe",
-        "PRODUCT_NAME": "Winter Jackets",
-        "DISCOUNT": 30,
-        "MSP": "$120"
-    }
-    '''
-    
-    result = process_json_input(sample_json_input)
-    print("\nGenerated Email:\n")
-    print(result)
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Email Generator API!"}
